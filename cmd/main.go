@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-// global flags for minio.
+// global flags for file server.
 var globalFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "config-dir, C",
@@ -33,7 +33,7 @@ var globalFlags = []cli.Flag{
 	},
 }
 
-var minioHelpTemplate = `NAME:
+var helpTemplate = `NAME:
   {{.Name}} - {{.Usage}}
 
 DESCRIPTION:
@@ -52,9 +52,8 @@ VERSION:
   ` +
 	`{{ "\n"}}`
 
-// Main main for minio server.
+// Main main for file server.
 func Main(args []string) {
-	// Set the minio app name.
 	appName := filepath.Base(args[0])
 
 	// Run the app - exit on error.
@@ -64,10 +63,8 @@ func Main(args []string) {
 }
 
 func newApp(name string) *cli.App {
-	// Collection of minio commands currently supported are.
 	commands := []cli.Command{}
 
-	// Collection of minio commands currently supported in a trie tree.
 	commandsTree := trie.NewTrie()
 
 	// registerCommand registers a cli command.
@@ -110,15 +107,15 @@ func newApp(name string) *cli.App {
 
 	app := cli.NewApp()
 	app.Name = name
-	app.Author = "Minio.io"
-	app.Usage = "Cloud Storage Server."
-	app.Description = `Minio is an Amazon S3 compatible object storage server. Use it to store photos, videos, VMs, containers, log files, or any blob of data as objects.`
+	app.Author = "File Server Author"
+	app.Usage = "File Upload Storage Server."
+	app.Description = `File Upload Storage Server`
 	app.Flags = globalFlags
-	app.HideVersion = true // Hide `--version` flag, we already have `minio version`.
+	app.HideVersion = true
 	app.Commands = commands
-	app.CustomAppHelpTemplate = minioHelpTemplate
+	app.CustomAppHelpTemplate = helpTemplate
 	app.CommandNotFound = func(ctx *cli.Context, command string) {
-		console.Printf("‘%s’ is not a minio sub-command. See ‘minio --help’.\n", command)
+		console.Printf("‘%s’ is not a supported sub-command. See ‘fileserver --help’.\n", command)
 		closestCommands := findClosestCommands(command)
 		if len(closestCommands) > 0 {
 			console.Println()

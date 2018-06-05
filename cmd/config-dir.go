@@ -9,11 +9,12 @@ import (
 )
 
 const (
-	// Default minio configuration directory where below configuration files/directories are stored.
-	defaultMinioConfigDir = ".minio"
+	// Default file server configuration directory where below configuration files/directories are stored.
+	// Default file server configuration directory where below configuration files/directories are stored.
+	defaultMinioConfigDir = ".fileserver"
 
 	// Minio configuration file.
-	minioConfigFile = "config.json"
+	fileServerConfigFile = "config.json"
 
 	// Directory contains below files/directories for HTTPS configuration.
 	certsDir = "certs"
@@ -66,7 +67,7 @@ func (config *ConfigDir) Create() error {
 
 // GetMinioConfigFile - returns absolute path of config.json file.
 func (config *ConfigDir) GetMinioConfigFile() string {
-	return filepath.Join(config.Get(), minioConfigFile)
+	return filepath.Join(config.Get(), fileServerConfigFile)
 }
 
 // GetPublicCertFile - returns absolute path of public.crt file.

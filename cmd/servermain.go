@@ -2,19 +2,40 @@ package cmd
 
 import (
 	"github.com/urfave/cli"
+	"github.com/minio/minio/cmd/logger"
+	"net/http"
+	"github.com/gorilla/mux"
+	"github.com/lzbj/FileServer/lib/server"
+	"github.com/lzbj/FileServer/lib/status"
+	"github.com/lzbj/FileServer/lib/stats"
 )
 
 var serverFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "address",
-		Value: ":" + globalMinioPort,
+		Value: ":" + globalPort,
 		Usage: "Bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname.",
+	},
+	cli.StringFlag{
+		Name:  "fspath",
+		Value: globalFSPath,
+		Usage: "Bind the file storage server storage backend to a file system path",
+	},
+	cli.StringFlag{
+		Name:  "backendtype",
+		Value: storageDefaultBackEndType,
+		Usage: "Determine the file storage server storage backend to a file system path or S3",
+	},
+	cli.StringFlag{
+		Name:  "cachepath",
+		Value: globalCacheFSPath,
+		Usage: " ",
 	},
 }
 
 var serverCmd = cli.Command{
 	Name:   "server",
-	Usage:  "Start object storage server.",
+	Usage:  "Start file storage server.",
 	Flags:  append(serverFlags, globalFlags...),
 	Action: serverMain,
 	CustomHelpTemplate: `NAME:
@@ -34,56 +55,65 @@ DIR:
 FLAGS:
   {{range .VisibleFlags}}{{.}}
   {{end}}{{end}}
-ENVIRONMENT VARIABLES:
-  ACCESS:
-     MINIO_ACCESS_KEY: Custom username or access key of minimum 3 characters in length.
-     MINIO_SECRET_KEY: Custom password or secret key of minimum 8 characters in length.
-
-  ENDPOINTS:
-     MINIO_ENDPOINTS: List of all endpoints delimited by ' '.
-
-  BROWSER:
-     MINIO_BROWSER: To disable web browser access, set this value to "off".
-
-  CACHE:
-     MINIO_CACHE_DRIVES: List of mounted drives or directories delimited by ";".
-     MINIO_CACHE_EXCLUDE: List of cache exclusion patterns delimited by ";".
-     MINIO_CACHE_EXPIRY: Cache expiry duration in days.
-	
-  DOMAIN:
-     MINIO_DOMAIN: To enable virtual-host-style requests, set this value to Minio host domain name.
-
-  WORM:
-     MINIO_WORM: To turn on Write-Once-Read-Many in server, set this value to "on".
-
-EXAMPLES:
-  1. Start minio server on "/home/shared" directory.
-     $ {{.HelpName}} /home/shared
-
-  2. Start minio server bound to a specific ADDRESS:PORT.
-     $ {{.HelpName}} --address 192.168.1.101:9000 /home/shared
-
-  3. Start minio server and enable virtual-host-style requests.
-     $ export MINIO_DOMAIN=mydomain.com
-     $ {{.HelpName}} --address mydomain.com:9000 /mnt/export
-
-  4. Start minio server on 64 disks server with endpoints through environment variable.
-     $ export MINIO_ENDPOINTS=/mnt/export{1...64}
-     $ {{.HelpName}}
-
-  5. Start distributed minio server on an 8 node setup with 8 drives each. Run following command on all the 8 nodes.
-     $ export MINIO_ACCESS_KEY=minio
-     $ export MINIO_SECRET_KEY=miniostorage
-     $ {{.HelpName}} http://node{1...8}.example.com/mnt/export/{1...8}
-
-  6. Start minio server with edge caching enabled.
-     $ export MINIO_CACHE_DRIVES="/mnt/drive1;/mnt/drive2;/mnt/drive3;/mnt/drive4"
-     $ export MINIO_CACHE_EXCLUDE="bucket1/*;*.png"
-     $ export MINIO_CACHE_EXPIRY=40
-     $ {{.HelpName}} /home/shared
 `,
 }
 
 func serverMain(ctx *cli.Context) {
+	if ctx.Args().First() == "help" {
+		cli.ShowCommandHelpAndExit(ctx, "server", 1)
+	}
 
+	logger.Disable = true
+
+	// Get "json" flag from command line argument and
+	// enable json and quite modes if jason flag is turned on.
+	jsonFlag := ctx.IsSet("json") || ctx.GlobalIsSet("json")
+	if jsonFlag {
+		logger.EnableJSON()
+	}
+
+	// Get quiet flag from command line argument.
+	quietFlag := ctx.IsSet("quiet") || ctx.GlobalIsSet("quiet")
+	if quietFlag {
+		logger.EnableQuiet()
+	}
+
+	handleCmdArgs(ctx)
+
+	handleEnvArgs()
+
+	initConfig()
+
+	// configure server.
+	var err error
+	var handler http.Handler
+	handler, err = configureServerHandler()
+}
+
+func handleCmdArgs(ctx *cli.Context) {
+
+}
+
+func handleEnvArgs() {
+
+}
+
+func initConfig() {
+
+}
+
+func configureServerHandler() (http.Handler, error) {
+	router := mux.NewRouter().SkipClean(true)
+
+	//Register upload api router
+
+	server.RegisterStorageServerRouter(router)
+
+	//Register status router
+	status.RegisteStatusRouter(router)
+
+	//Register statistics api router
+	stats.RegisteStatusRouter(router)
+
+	return nil, nil
 }
