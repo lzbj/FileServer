@@ -1,34 +1,34 @@
 package cmd
 
 import (
-	"github.com/urfave/cli"
-	"github.com/minio/minio/cmd/logger"
-	"net/http"
 	"github.com/gorilla/mux"
 	"github.com/lzbj/FileServer/lib/server"
-	"github.com/lzbj/FileServer/lib/status"
 	"github.com/lzbj/FileServer/lib/stats"
+	"github.com/lzbj/FileServer/lib/status"
+	"github.com/minio/minio/cmd/logger"
+	"github.com/urfave/cli"
+	"net/http"
 )
 
 var serverFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "address",
-		Value: ":" + globalPort,
+		Value: server.GlobalPort,
 		Usage: "Bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname.",
 	},
 	cli.StringFlag{
 		Name:  "fspath",
-		Value: globalFSPath,
+		Value: server.GlobalFSPath,
 		Usage: "Bind the file storage server storage backend to a file system path",
 	},
 	cli.StringFlag{
 		Name:  "backendtype",
-		Value: storageDefaultBackEndType,
+		Value: server.StorageDefaultBackEndType,
 		Usage: "Determine the file storage server storage backend to a file system path or S3",
 	},
 	cli.StringFlag{
 		Name:  "cachepath",
-		Value: globalCacheFSPath,
+		Value: server.GlobalCacheFSPath,
 		Usage: " ",
 	},
 }
@@ -88,6 +88,15 @@ func serverMain(ctx *cli.Context) {
 	var err error
 	var handler http.Handler
 	handler, err = configureServerHandler()
+	if err != nil {
+		logger.Fatal(err, "Unable to configure one of server's RPC services")
+	}
+
+	httpServer := server.NewServer(ctx.String("address"), handler)
+	go func() {
+		server.GlobalHTTPServerErrorCh <- httpServer.Start()
+	}()
+	handleSignals()
 }
 
 func handleCmdArgs(ctx *cli.Context) {
@@ -114,6 +123,23 @@ func configureServerHandler() (http.Handler, error) {
 
 	//Register statistics api router
 	stats.RegisteStatusRouter(router)
+	return server.RegisterHandlers(router, server.GlobalHandlers...), nil
 
-	return nil, nil
+}
+
+func handleSignals() {
+	for {
+		select {
+		case signal := <-server.GlobalHTTPServerErrorCh:
+			switch signal {
+
+			}
+
+		case osSignal := <-server.GlobalOSSignalCh:
+
+			switch osSignal {
+
+			}
+		}
+	}
 }

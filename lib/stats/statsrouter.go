@@ -19,4 +19,3 @@ func RegisteStatusRouter(router *mux.Router) {
 
 	apiRouter.Methods(http.MethodGet).Path("").HandlerFunc(statsAPI.StatsHandler)
 }
-

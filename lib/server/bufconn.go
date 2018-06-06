@@ -2,8 +2,8 @@ package server
 
 import (
 	"bufio"
-	"time"
 	"net"
+	"time"
 )
 
 // BufConn - is a generic stream-oriented network connection supporting buffered reader and read/write timeout.
