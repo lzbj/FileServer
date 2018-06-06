@@ -17,5 +17,5 @@ func RegisterStorageServerRouter(router *mux.Router) {
 
 	apiRouter := router.PathPrefix(storageServerAPIPathPrefix).Subrouter()
 
-	apiRouter.Methods(http.MethodGet).Path("").HandlerFunc(storageAPI.UploadHandler)
+	apiRouter.Methods(http.MethodGet).HandlerFunc(storageAPI.UploadHandler)
 }

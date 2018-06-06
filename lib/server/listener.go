@@ -3,18 +3,17 @@ package server
 import (
 	"context"
 	"crypto/tls"
-	"time"
-	"net"
 	"fmt"
-	"net/http"
-	"sync"
-	"os"
-	"syscall"
-	"io"
 	"github.com/minio/minio/cmd/logger"
+	"io"
+	"net"
+	"net/http"
+	"os"
 	"strings"
+	"sync"
+	"syscall"
+	"time"
 )
-
 
 var sslRequiredErrMsg = []byte("HTTP/1.0 403 Forbidden\r\n\r\nSSL required")
 
@@ -61,13 +60,13 @@ type acceptResult struct {
 	err  error
 }
 
-// httpListener - HTTP listener capable of handling multiple server addresses.
+// httpListener
 type httpListener struct {
-	mutex                  sync.Mutex         // to guard Close() method.
-	tcpListeners           []*net.TCPListener // underlaying TCP listeners.
-	acceptCh               chan acceptResult  // channel where all TCP listeners write accepted connection.
-	doneCh                 chan struct{}      // done channel for TCP listener goroutines.
-	tlsConfig              *tls.Config        // TLS configuration
+	mutex                  sync.Mutex        // to guard Close() method.
+	tcpListener            *net.TCPListener  // underlaying TCP listener.
+	acceptCh               chan acceptResult // channel where all TCP listeners write accepted connection.
+	doneCh                 chan struct{}     // done channel for TCP listener goroutines.
+	tlsConfig              *tls.Config       // TLS configuration
 	tcpKeepAliveTimeout    time.Duration
 	readTimeout            time.Duration
 	writeTimeout           time.Duration
@@ -214,9 +213,9 @@ func (listener *httpListener) start() {
 	}
 
 	// Start separate goroutine for each TCP listener to handle connection.
-	for _, tcpListener := range listener.tcpListeners {
-		go handleListener(tcpListener, listener.doneCh)
-	}
+
+	go handleListener(listener.tcpListener, listener.doneCh)
+
 }
 
 // Accept - reads from httpListener.acceptCh for one of previously accepted TCP connection and returns the same.
@@ -237,9 +236,7 @@ func (listener *httpListener) Close() (err error) {
 		return syscall.EINVAL
 	}
 
-	for i := range listener.tcpListeners {
-		listener.tcpListeners[i].Close()
-	}
+	listener.tcpListener.Close()
 	close(listener.doneCh)
 
 	listener.doneCh = nil
@@ -248,10 +245,7 @@ func (listener *httpListener) Close() (err error) {
 
 // Addr - net.Listener interface compatible method returns net.Addr.  In case of multiple TCP listeners, it returns '0.0.0.0' as IP address.
 func (listener *httpListener) Addr() (addr net.Addr) {
-	addr = listener.tcpListeners[0].Addr()
-	if len(listener.tcpListeners) == 1 {
-		return addr
-	}
+	addr = listener.tcpListener.Addr()
 
 	tcpAddr := addr.(*net.TCPAddr)
 	if ip := net.ParseIP("0.0.0.0"); ip != nil {
@@ -262,20 +256,11 @@ func (listener *httpListener) Addr() (addr net.Addr) {
 	return addr
 }
 
-// Addrs - returns all address information of TCP listeners.
-func (listener *httpListener) Addrs() (addrs []net.Addr) {
-	for i := range listener.tcpListeners {
-		addrs = append(addrs, listener.tcpListeners[i].Addr())
-	}
-
-	return addrs
-}
-
 // newHTTPListener - creates new httpListener object which is interface compatible to net.Listener.
 // httpListener is capable to
 // * listen to multiple addresses
 // * controls incoming connections only doing HTTP protocol
-func newHTTPListener(serverAddrs []string,
+func NewHTTPListener(serverAddr string,
 	tlsConfig *tls.Config,
 	tcpKeepAliveTimeout time.Duration,
 	readTimeout time.Duration,
@@ -283,36 +268,30 @@ func newHTTPListener(serverAddrs []string,
 	updateBytesReadFunc func(int),
 	updateBytesWrittenFunc func(int)) (listener *httpListener, err error) {
 
-	var tcpListeners []*net.TCPListener
+	var tcpListener *net.TCPListener
 	// Close all opened listeners on error
 	defer func() {
 		if err == nil {
 			return
 		}
 
-		for _, tcpListener := range tcpListeners {
-			// Ignore error on close.
-			tcpListener.Close()
-		}
+		tcpListener.Close()
+
 	}()
 
-	for _, serverAddr := range serverAddrs {
-		var l net.Listener
-		if l, err = net.Listen("tcp", serverAddr); err != nil {
-			return nil, err
-		}
+	var l net.Listener
+	if l, err = net.Listen("tcp", serverAddr); err != nil {
+		return nil, err
+	}
 
-		tcpListener, ok := l.(*net.TCPListener)
-		if !ok {
-			return nil, fmt.Errorf("unexpected listener type found %v, expected net.TCPListener", l)
-		}
-
-		tcpListeners = append(tcpListeners, tcpListener)
+	tcpListener, ok := l.(*net.TCPListener)
+	if !ok {
+		return nil, fmt.Errorf("unexpected listener type found %v, expected net.TCPListener", l)
 	}
 
 	listener = &httpListener{
-		tcpListeners:           tcpListeners,
-		tlsConfig:              tlsConfig,
+		tcpListener:            tcpListener,
+		tlsConfig:              nil,
 		tcpKeepAliveTimeout:    tcpKeepAliveTimeout,
 		readTimeout:            readTimeout,
 		writeTimeout:           writeTimeout,

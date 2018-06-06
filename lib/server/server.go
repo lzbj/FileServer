@@ -1,6 +1,5 @@
 package server
 
-
 import (
 	"crypto/tls"
 	"errors"
@@ -9,10 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	humanize "github.com/dustin/go-humanize"
-	"github.com/minio/minio-go/pkg/set"
-	"github.com/minio/minio/pkg/certs"
-	"net"
+	"github.com/dustin/go-humanize"
 )
 
 const (
@@ -37,13 +33,13 @@ const (
 // Server - extended http.Server supports multiple addresses to serve and enhanced connection handling.
 type Server struct {
 	http.Server
-	Addrs                  []string      // addresses on which the server listens for new connection.
+	Addrs                  string        // addresses on which the server listens for new connection.
 	ShutdownTimeout        time.Duration // timeout used for graceful server shutdown.
 	TCPKeepAliveTimeout    time.Duration // timeout used for underneath TCP connection.
 	UpdateBytesReadFunc    func(int)     // function to be called to update bytes read in bufConn.
 	UpdateBytesWrittenFunc func(int)     // function to be called to update bytes written in bufConn.
 	listenerMutex          *sync.Mutex   // to guard 'listener' field.
-	listener               *net.TCPListener // HTTP listener for all 'Addrs' field.
+	listener               *httpListener // HTTP listener for all 'Addrs' field.
 	inShutdown             uint32        // indicates whether the server is in shutdown or not
 	requestCount           int32         // counter holds no. of request in process.
 }
@@ -59,14 +55,14 @@ func (srv *Server) Start() (err error) {
 	writeTimeout := srv.WriteTimeout
 	handler := srv.Handler // if srv.Handler holds non-synced state -> possible data race
 
-	addrs := set.CreateStringSet(srv.Addrs...).ToSlice() // copy and remove duplicates
+	addrs := srv.Addrs // copy and remove duplicates
 	tcpKeepAliveTimeout := srv.TCPKeepAliveTimeout
 	updateBytesReadFunc := srv.UpdateBytesReadFunc
 	updateBytesWrittenFunc := srv.UpdateBytesWrittenFunc
 
 	// Create new HTTP listener.
 	var listener *httpListener
-	listener, err = newHTTPListener(
+	listener, err = NewHTTPListener(
 		addrs,
 		tlsConfig,
 		tcpKeepAliveTimeout,
@@ -140,41 +136,14 @@ func (srv *Server) Shutdown() error {
 	}
 }
 
-// Secure Go implementations of modern TLS ciphers
-// The following ciphers are excluded because:
-//  - RC4 ciphers:              RC4 is broken
-//  - 3DES ciphers:             Because of the 64 bit blocksize of DES (Sweet32)
-//  - CBC-SHA256 ciphers:       No countermeasures against Lucky13 timing attack
-//  - CBC-SHA ciphers:          Legacy ciphers (SHA-1) and non-constant time
-//                              implementation of CBC.
-//                              (CBC-SHA ciphers can be enabled again if required)
-//  - RSA key exchange ciphers: Disabled because of dangerous PKCS1-v1.5 RSA
-//                              padding scheme. See Bleichenbacher attacks.
-var defaultCipherSuites = []uint16{
-	tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-	tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-	tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-}
-
-// Go only provides constant-time implementations of Curve25519 and NIST P-256 curve.
-var secureCurves = []tls.CurveID{tls.X25519, tls.CurveP256}
-
 // NewServer - creates new HTTP server using given arguments.
-func NewServer(addrs []string, handler http.Handler, getCert certs.GetCertificateFunc) *Server {
-	var tlsConfig *tls.Config
-	if getCert != nil {
-		tlsConfig = &tls.Config{
-			// TLS hardening
-			PreferServerCipherSuites: true,
-			CipherSuites:             defaultCipherSuites,
-			CurvePreferences:         secureCurves,
-			MinVersion:               tls.VersionTLS12,
-			NextProtos:               []string{"http/1.1", "h2"},
-		}
-		tlsConfig.GetCertificate = getCert
+func NewServer(addrs string, handler http.Handler) *Server {
+
+	tlsConfig := &tls.Config{
+		// TLS hardening
+		PreferServerCipherSuites: false,
+		MinVersion:               tls.VersionTLS12,
+		NextProtos:               []string{"http/1.1", "h2"},
 	}
 
 	httpServer := &Server{

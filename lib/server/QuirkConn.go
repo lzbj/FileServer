@@ -2,8 +2,8 @@ package server
 
 import (
 	"net"
-	"time"
 	"sync/atomic"
+	"time"
 )
 
 type QuirkConn struct {
