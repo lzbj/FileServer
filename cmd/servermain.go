@@ -5,6 +5,7 @@ import (
 	"github.com/lzbj/FileServer/lib/server"
 	"github.com/lzbj/FileServer/lib/stats"
 	"github.com/lzbj/FileServer/lib/status"
+	"github.com/lzbj/FileServer/lib/storage"
 	"github.com/minio/minio/cmd/logger"
 	"github.com/urfave/cli"
 	"net/http"
@@ -96,17 +97,25 @@ func serverMain(ctx *cli.Context) {
 	go func() {
 		server.GlobalHTTPServerErrorCh <- httpServer.Start()
 	}()
+	server.GlobalBackEndFSSys, err = storage.NewFSSys(ctx.String("fspath"))
+
+	if err != nil {
+		httpServer.Shutdown()
+	}
 	handleSignals()
 }
 
+// handle command args and do some checks.
 func handleCmdArgs(ctx *cli.Context) {
 
 }
 
+// handle ENV args if necessary
 func handleEnvArgs() {
 
 }
 
+// Do some configuration initialization and conflicts and schema checks.
 func initConfig() {
 
 }
