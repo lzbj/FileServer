@@ -85,6 +85,12 @@ func serverMain(ctx *cli.Context) {
 
 	initConfig()
 
+	initDBSys()
+
+	initDBCache()
+
+	initMonitorSys()
+
 	// configure server.
 	var err error
 	var handler http.Handler
@@ -117,6 +123,18 @@ func handleEnvArgs() {
 
 // Do some configuration initialization and conflicts and schema checks.
 func initConfig() {
+
+}
+
+func initDBCache() {
+
+}
+
+func initDBSys() {
+
+}
+
+func initMonitorSys() {
 
 }
 
