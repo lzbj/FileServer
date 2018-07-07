@@ -85,6 +85,8 @@ func serverMain(ctx *cli.Context) {
 
 	initConfig()
 
+	initStorage()
+
 	initDBSys()
 
 	initDBCache()
@@ -103,7 +105,6 @@ func serverMain(ctx *cli.Context) {
 	go func() {
 		server.GlobalHTTPServerErrorCh <- httpServer.Start()
 	}()
-	server.GlobalBackEndFSSys, err = storage.NewFSSys(ctx.String("fspath"))
 
 	if err != nil {
 		httpServer.Shutdown()
@@ -136,6 +137,14 @@ func initDBSys() {
 
 func initMonitorSys() {
 
+}
+
+func initStorage() {
+	var err error
+	server.GlobalBackEndFSSys, err = storage.NewFStorage(server.GlobalFSPath)
+	if err != nil {
+
+	}
 }
 
 func configureServerHandler() (http.Handler, error) {
