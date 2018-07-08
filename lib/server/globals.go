@@ -2,11 +2,11 @@ package server
 
 import (
 	"github.com/dustin/go-humanize"
+	"github.com/lzbj/FileServer/util"
 	"github.com/lzbj/FileServer/util/cache"
 	"github.com/lzbj/FileServer/util/db"
 	"github.com/lzbj/FileServer/util/monitor"
 	"os"
-	"github.com/lzbj/FileServer/util"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 	StorageS3BackendType      = "AWSS3"
 	GlobalHTTPServerErrorCh   = make(chan error)
 	GlobalOSSignalCh          = make(chan os.Signal, 1)
-	GlobalBackEndFSSys        util.FSLayer
+	GlobalBackEndFSSys        util.FSStorage
 	GlobalDBCache             cache.RedisCache
 	GlolabDBConn              db.DBConn
 	GlobalMonitorSys          monitor.MonitorSys

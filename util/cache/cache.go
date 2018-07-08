@@ -1,6 +1,4 @@
 package cache
 
-type RedisCache interface{
-
+type RedisCache interface {
 }
-
