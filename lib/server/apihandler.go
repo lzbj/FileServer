@@ -13,10 +13,13 @@ func (a storageServerHandler) UploadHandler(w http.ResponseWriter, r *http.Reque
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Upload Handler: %s\n", "hello")
-	_ = vars["uploadfile"]
+	upload := vars["uploadfile"]
+	fmt.Println(upload)
+	fmt.Println(upload)
 	r.ParseMultipartForm(32 << 1)
 	file, handler, err := r.FormFile("uploadfile")
 	network := r.FormValue("network")
+	fmt.Println(vars)
 	if len(network) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 	}
@@ -42,6 +45,10 @@ func (a storageServerHandler) UploadHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (a storageServerHandler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	networkid := vars["networkid"]
+	filename := vars["filename"]
+
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Download Handler: %s\n", "hello")
+	fmt.Fprintf(w, "Download Handler: %s,%s,%s\n", "hello1", networkid, filename)
 }

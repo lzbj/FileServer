@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bytes"
@@ -11,15 +11,67 @@ import (
 	"os"
 )
 
-func main() {
-	// file / form to upload
-	//uploadFile("./file.input")
-	target_url := "http://localhost:9000/storage"
-	filename := "./file.input"
-	postFile(filename, target_url)
+func getFile(targetUrl string) (string, error) {
+	resp, err := http.Get(targetUrl)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	defer resp.Body.Close()
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	logger.Info(resp.Status)
+	logger.Info("FileUploadServer Response: " + string(respBody))
+
+	return resp.Status, nil
 }
 
-func uploadFile(filename string) {
+func postFile(targetUrl string, filename string) (string, error) {
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+	bodyWriter.CreateFormField("")
+	bodyWriter.WriteField("network", "97753")
+	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", filename)
+	if err != nil {
+		fmt.Println("error writing to buffer")
+		return "", err
+	}
+	fh, err := os.Open(filename)
+	if err != nil {
+		fmt.Println("error opening file")
+		return "", err
+	}
+	defer fh.Close()
+	//iocopy
+	_, err = io.Copy(fileWriter, fh)
+	if err != nil {
+		return "", err
+	}
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+	resp, err := http.Post(targetUrl, contentType, bodyBuf)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	defer resp.Body.Close()
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	logger.Info(resp.Status)
+	logger.Info("FileUploadServer Response: " + string(respBody))
+
+	return resp.Status, nil
+
+}
+
+/**
+func uploadFile(targetUrl,filename string) {
 	c := http.Client{}
 	f, err := os.Open(filename)
 	if err != nil {
@@ -36,7 +88,7 @@ func uploadFile(filename string) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:9000/storage", bytes.NewReader(body.Bytes()))
+	req, err := http.NewRequest("POST", targetUrl, bytes.NewReader(body.Bytes()))
 	if err != nil {
 		logger.Info("new request failed.", err)
 		return
@@ -60,44 +112,4 @@ func uploadFile(filename string) {
 	logger.Info("FileUploadServer Response: " + string(content))
 
 }
-
-func postFile(filename string, targetUrl string) error {
-	bodyBuf := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuf)
-	bodyWriter.CreateFormField("")
-	bodyWriter.WriteField("network", "97753")
-	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", filename)
-	if err != nil {
-		fmt.Println("error writing to buffer")
-		return err
-	}
-	fh, err := os.Open(filename)
-	if err != nil {
-		fmt.Println("error opening file")
-		return err
-	}
-	defer fh.Close()
-	//iocopy
-	_, err = io.Copy(fileWriter, fh)
-	if err != nil {
-		return err
-	}
-	contentType := bodyWriter.FormDataContentType()
-	bodyWriter.Close()
-	resp, err := http.Post(targetUrl, contentType, bodyBuf)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	logger.Info(resp.Status)
-	logger.Info("FileUploadServer Response: " + string(respBody))
-
-	return nil
-
-}
+*/
