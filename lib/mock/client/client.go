@@ -29,6 +29,41 @@ func getFile(targetUrl string) (string, error) {
 	return resp.Status, nil
 }
 
+func postBuffer(targetUrl string, filename string, content *bytes.Buffer) (string, error) {
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+	bodyWriter.CreateFormField("")
+	bodyWriter.WriteField("network", "97753")
+	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", filename)
+	if err != nil {
+		fmt.Println("error writing to buffer")
+		return "", err
+	}
+
+	//iocopy
+	_, err = io.Copy(fileWriter, content)
+	if err != nil {
+		return "", err
+	}
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+	resp, err := http.Post(targetUrl, contentType, bodyBuf)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	defer resp.Body.Close()
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	logger.Info(resp.Status)
+	logger.Info("FileUploadServer Response: " + string(respBody))
+
+	return resp.Status, nil
+}
+
 func postFile(targetUrl string, filename string) (string, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
