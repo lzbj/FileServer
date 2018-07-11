@@ -11,8 +11,9 @@ import (
 
 var (
 	GlobalPort                = "127.0.0.1:9000"
-	GlobalFSPath              = "/opt/fileStorageServer"
-	GlobalCacheFSPath         = "/opt/cacheFileStorageServer"
+	GlobalFSPath              = "/opt/FileStorage"
+	GlobalFSInitalized        = false
+	GlobalCacheFSPath         = "/opt/CacheFileStorage"
 	StorageDefaultBackEndType = "FS"
 	StorageS3BackendType      = "AWSS3"
 	GlobalHTTPServerErrorCh   = make(chan error)
@@ -33,3 +34,5 @@ const (
 	// S3 Backend storage
 	S3
 )
+
+//Errors

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/lzbj/FileServer/lib/server"
 	"github.com/lzbj/FileServer/lib/stats"
@@ -64,7 +66,7 @@ func serverMain(ctx *cli.Context) {
 		cli.ShowCommandHelpAndExit(ctx, "server", 1)
 	}
 
-	logger.Disable = true
+	logger.Disable = false
 
 	// Get "json" flag from command line argument and
 	// enable json and quite modes if jason flag is turned on.
@@ -78,23 +80,30 @@ func serverMain(ctx *cli.Context) {
 	if quietFlag {
 		logger.EnableQuiet()
 	}
+	var err error
 
+	// Do some checks, such as the address.
 	handleCmdArgs(ctx)
 
+	// Do some env checks.
 	handleEnvArgs()
 
-	initConfig()
+	// Do some initialization works.
+	err = initConfig(ctx)
+	if err != nil {
 
-	initStorage()
+	}
 
-	initDBSys()
+	initStorage(ctx)
 
-	initDBCache()
+	initDBSys(ctx)
 
-	initMonitorSys()
+	initDBCache(ctx)
+
+	initMonitorSys(ctx)
 
 	// configure server.
-	var err error
+
 	var handler http.Handler
 	handler, err = configureServerHandler()
 	if err != nil {
@@ -114,6 +123,7 @@ func serverMain(ctx *cli.Context) {
 
 // handle command args and do some checks.
 func handleCmdArgs(ctx *cli.Context) {
+	fmt.Println(ctx.String("address"))
 
 }
 
@@ -123,42 +133,59 @@ func handleEnvArgs() {
 }
 
 // Do some configuration initialization and conflicts and schema checks.
-func initConfig() {
-
+func initConfig(ctx *cli.Context) error {
+	fpath := ctx.String("fspath")
+	if len(fpath) != 0 {
+		server.GlobalFSPath = fpath
+	}
+	return nil
 }
 
-func initDBCache() {
-
+func initDBCache(ctx *cli.Context) error {
+	//Not implemented yet.
+	return nil
 }
 
-func initDBSys() {
-
+func initDBSys(ctx *cli.Context) error {
+	//Not implemented yet.
+	return nil
 }
 
-func initMonitorSys() {
-
+func initMonitorSys(ctx *cli.Context) error {
+	//Not implemented yet.
+	return nil
 }
 
-func initStorage() {
+func initStorage(ctx *cli.Context) error {
 	var err error
+	if server.GlobalFSInitalized {
+		logger.Info("global file storage already initialized")
+		return errors.New("already initialized")
+	}
+	logger.Info("start to initialize the global FS storage...")
+	fmt.Println(server.GlobalFSPath)
 	server.GlobalBackEndFSSys, err = storage.NewFStorage(server.GlobalFSPath)
 	if err != nil {
-
+		logger.Info("error %s", err)
+		return errors.New(err.Error())
 	}
+	return nil
 }
 
 func configureServerHandler() (http.Handler, error) {
+	logger.Info("Start to configure server handlers...")
 	router := mux.NewRouter().SkipClean(true)
 
 	//Register upload api router
-
 	server.RegisterStorageServerRouter(router)
+	//server.RegisterStorageServerRouterDownload(router)
 
 	//Register status router
 	status.RegisteStatusRouter(router)
 
 	//Register statistics api router
 	stats.RegisteStatusRouter(router)
+	logger.Info("Configure server handlers finished .")
 	return server.RegisterHandlers(router, server.GlobalHandlers...), nil
 
 }

@@ -4,43 +4,105 @@ import (
 	"context"
 	"fmt"
 	"github.com/lzbj/FileServer/util/lock"
+	"github.com/minio/minio/cmd/logger"
+	"github.com/spf13/afero"
 	"sync"
 	"time"
 )
 
 // FSLayer implements primitives for FS Layer.
 type FSStorage interface {
-	CreateDir(ctx context.Context, network string, location string) error
-	DeleteDir(ctx context.Context, network string, location string) error
-	DeleteFile(ctx context.Context, network string, location string, fname string) error
-	CreateFile(ctx context.Context, network string, location string, fname string) error
+	CreateDir(ctx context.Context, network string) error
+	CreateDirNew(ctx context.Context, network string) error
+	DeleteDir(ctx context.Context, network string) error
+	DeleteFile(ctx context.Context, network string, fname string) error
+	CreateFile(ctx context.Context, network string, fname string) (afero.File, error)
 	// TODO: add more interfaces.
 }
 
+func NewFStorage(path string) (*FStorage, error) {
+	s := &FStorage{}
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.err = make(chan error)
+	s.report = make(chan StorageStatus)
+
+	fs := afero.NewOsFs()
+
+	exist, err := afero.Exists(fs, path)
+	if err != nil {
+		logger.Info("error %s", err)
+		return nil, err
+	}
+	if !exist {
+		err = fs.Mkdir(path, 0755)
+		if err != nil {
+			logger.Info("error %s", err)
+			return nil, err
+		}
+	}
+	s.fs = afero.NewBasePathFs(fs, path)
+	return s, nil
+}
+
+// FStorage implements the FSStorage interfaces.
 type FStorage struct {
+	// lock for the storage
+	lock sync.Mutex
+	// The root dir store the files
+	fs afero.Fs
+	// Error chan for errors in the storage.
+	err chan error
+	// The ticker for the FS usage check intervals.
+	ticker time.Ticker
+	report chan StorageStatus
 }
 
-func (fs *FStorage) CreateDir(ctx context.Context, network string, location string) error {
-	s := fmt.Sprintf("FS Create network %s in location %s", network, location)
+// StorageStatus represents the FS storage status.
+type StorageStatus struct {
+	diskSize uint32
+	usage    float32
+}
+
+func (fs *FStorage) CreateDir(ctx context.Context, network string) error {
+	s := fmt.Sprintf("FS Create network %s in location %s", network)
 	fmt.Println(s)
 	return nil
 }
 
-func (fs *FStorage) DeleteDir(ctx context.Context, network string, location string) error {
-	s := fmt.Sprintf("FS Delete network %s in location %s", network, location)
+func (fs *FStorage) CreateDirNew(ctx context.Context, network string) error {
+	return fs.fs.Mkdir(network, 0755)
+}
+
+func (fs *FStorage) DeleteDir(ctx context.Context, network string) error {
+	s := fmt.Sprintf("FS Delete network %s in location %s", network)
 	fmt.Println(s)
 	return nil
 }
 
-func (fs *FStorage) DeleteFile(ctx context.Context, network string, location string, fname string) error {
+func (fs *FStorage) DeleteFile(ctx context.Context, network string, fname string) error {
 	s := fmt.Sprintf("FS delete %s in network %s ", fname, network)
 	fmt.Println(s)
 	return nil
 }
 
-func (fs *FStorage) CreateFile(ctx context.Context, network string, location string, fname string) error {
+func (fs *FStorage) CreateFile(ctx context.Context, network string, fname string) (afero.File, error) {
 	s := fmt.Sprintf("FS create %s in network %s ", fname, network)
 	fmt.Println(s)
+	f, err := fs.fs.Create(network + "/" + fname)
+	if err != nil {
+		logger.Info("error happened during create file %s", err)
+		return nil, err
+	}
+	return f, nil
+}
+
+func (fs *FStorage) CreateFileNew(ctx context.Context, network string, fname string) error {
+	_, err := fs.fs.Create(network)
+	if err != nil {
+		return err
+	}
+	//fs.fs.Create()
 	return nil
 }
 
