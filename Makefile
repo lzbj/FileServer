@@ -19,7 +19,5 @@ unit:
 	$(foreach i,$(PKGS),go test $(i) $(TEST_FLAGS) || exit ;)
 
 dep: # install dep
-ifndef DEP
 	go get github.com/golang/dep
 	dep ensure
-endif

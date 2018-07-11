@@ -5,7 +5,7 @@ import (
 )
 
 func TestPostFile(t *testing.T) {
-	targetUrl := "http://localhost:9000/storage/upload/123456"
+	targetUrl := "http://127.0.0.1:9000/storage/upload/123456"
 	filename := "file.input"
 	status, err := postFile(targetUrl, filename)
 	if err != nil {
