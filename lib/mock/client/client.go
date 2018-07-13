@@ -24,16 +24,17 @@ func getFile(targetUrl string) (string, error) {
 		return "", err
 	}
 	logger.Info(resp.Status)
-	logger.Info("FileUploadServer Response: " + string(respBody))
+	//logger.Info("FileUploadServer Response: " + string(respBody))
+	ioutil.WriteFile("0.pdf", respBody, 0755)
 
 	return resp.Status, nil
 }
 
-func postBuffer(targetUrl string, filename string, content *bytes.Buffer) (string, error) {
+func postBuffer(targetUrl string, networkname string, filename string, content *bytes.Buffer) (string, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	bodyWriter.CreateFormField("")
-	bodyWriter.WriteField("network", "97753")
+	bodyWriter.WriteField("network", networkname)
 	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", filename)
 	if err != nil {
 		fmt.Println("error writing to buffer")

@@ -178,7 +178,7 @@ func configureServerHandler() (http.Handler, error) {
 
 	//Register upload api router
 	server.RegisterStorageServerRouter(router)
-	//server.RegisterStorageServerRouterDownload(router)
+	server.RegisterStorageServerRouterDownload(router)
 
 	//Register status router
 	status.RegisteStatusRouter(router)

@@ -6,6 +6,7 @@ import (
 	"github.com/lzbj/FileServer/util/lock"
 	"github.com/minio/minio/cmd/logger"
 	"github.com/spf13/afero"
+	"os"
 	"sync"
 	"time"
 )
@@ -17,6 +18,7 @@ type FSStorage interface {
 	DeleteDir(ctx context.Context, network string) error
 	DeleteFile(ctx context.Context, network string, fname string) error
 	CreateFile(ctx context.Context, network string, fname string) (afero.File, error)
+	GetFile(ctx context.Context, network string, fname string) (afero.File, error)
 	// TODO: add more interfaces.
 }
 
@@ -92,6 +94,16 @@ func (fs *FStorage) CreateFile(ctx context.Context, network string, fname string
 	f, err := fs.fs.Create(network + "/" + fname)
 	if err != nil {
 		logger.Info("error happened during create file %s", err)
+		return nil, err
+	}
+	return f, nil
+}
+
+func (fs *FStorage) GetFile(ctx context.Context, network string, fname string) (afero.File, error) {
+	wFileName := network + "/" + fname
+	f, err := fs.fs.OpenFile(wFileName, os.O_RDONLY, 0666)
+	if err != nil {
+		logger.Info("error happened during get file %s", err)
 		return nil, err
 	}
 	return f, nil
