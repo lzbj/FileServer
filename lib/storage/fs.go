@@ -2,19 +2,16 @@ package storage
 
 import (
 	"github.com/lzbj/FileServer/util"
+	"github.com/minio/minio/cmd/logger"
 )
 
-/**
-func NewFSSys(fsPath string) (util.FSStorage, error) {
-	fsSys := FSSys{
-		fsPath: fsPath,
-		rwPool: &fsIOPool{readerMap: make(map[string]*lock.RLockedFile)},
-		fs: &util.FStorage{},
-	}
-	return fsSys, nil
-}
-*/
-
 func NewFStorage(fsPath string) (util.FSStorage, error) {
-	return &util.FStorage{}, nil
+	storage, err := util.NewFStorage(fsPath)
+	if err != nil {
+		logger.Info("error happened during new fs storage %s", err)
+		return nil, err
+	}
+
+	return storage, nil
+
 }
