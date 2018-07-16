@@ -63,7 +63,6 @@ func (a storageServerHandler) UploadHandlerStorage(w http.ResponseWriter, r *htt
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 	}
-	fmt.Println("yes, hello")
 	fmt.Fprintf(w, "%s\n", b)
 
 }
@@ -89,8 +88,9 @@ func (a storageServerHandler) DownloadHandler(w http.ResponseWriter, r *http.Req
 		n, err = f.Read(buf)
 		writer.Write(buf[0:n])
 	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Download Handler: %s,%s,%s\n", "hello1", networkid, filename)
+
+	//w.WriteHeader(http.StatusOK)
+	//fmt.Fprintf(w, "Download Handler: %s,%s,%s\n", "hello1", networkid, filename)
 }
 
 // UploadHandler store the uploaded file current app `test` folder

@@ -16,6 +16,15 @@ Test:
 generate many files upload request simultaneously, to test the
 server throughput.
 
+upload a file with the specified network.
+
+`curl -F 'uploadfile=@file.input' -F 'network=97753' http://localhost:9000/storage/upload`
+
+download a file with the specified url:
+
+`curl http://127.0.0.1:9000/storage/download/97753/file.input -o newfile.input`
+
+
 
 #
 Complex Architecture version:
