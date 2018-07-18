@@ -16,6 +16,7 @@ Test:
 generate many files upload request simultaneously, to test the
 server throughput.
 
+`cd ~/workspace/go_work/src/github.com/lzbj/FileServer/lib/mock/client`
 upload a file with the specified network.
 
 `curl -F 'uploadfile=@file.input' -F 'network=97753' http://localhost:9000/storage/upload`
@@ -25,6 +26,13 @@ download a file with the specified url:
 `curl http://127.0.0.1:9000/storage/download/97753/file.input -o newfile.input`
 
 
+Async upload and query status
+
+`curl -F 'uploadfile=@file.input' -F 'network=97753' http://localhost:9000/storage/async/upload`
+
+query the upload status.
+
+`curl  http://localhost:9000/status/query/97753/file.input -v`
 
 #
 Complex Architecture version:

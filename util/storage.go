@@ -66,6 +66,7 @@ type StorageStatus struct {
 	usage    float32
 }
 
+
 func (fs *FStorage) CreateDir(ctx context.Context, network string) error {
 	s := fmt.Sprintf("FS Create network %s in location %s", network)
 	fmt.Println(s)
