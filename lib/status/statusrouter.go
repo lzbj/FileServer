@@ -17,5 +17,5 @@ func RegisteStatusRouter(router *mux.Router) {
 
 	apiRouter := router.PathPrefix(storageServerStatusPrefix).Subrouter()
 
-	apiRouter.Methods(http.MethodGet).Path("").HandlerFunc(statusAPI.StatusHandler)
+	apiRouter.Methods(http.MethodGet).Path("/query/{networkid}/{filename}").HandlerFunc(statusAPI.StatusHandler)
 }

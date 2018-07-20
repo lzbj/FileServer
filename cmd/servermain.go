@@ -11,6 +11,8 @@ import (
 	"github.com/minio/minio/cmd/logger"
 	"github.com/urfave/cli"
 	"net/http"
+	"os"
+	"time"
 )
 
 var serverFlags = []cli.Flag{
@@ -109,6 +111,10 @@ func serverMain(ctx *cli.Context) {
 	if err != nil {
 		logger.Fatal(err, "Unable to configure one of server's RPC services")
 	}
+    stop:=make(chan interface{})
+	go server.AsyncOps(stop,server.GlobalOperationChannel,server.GlobalOpeResChan,time.Millisecond*2000)
+    go server.QueryProducer(stop,server.GlobalOpeResChan)
+    go server.QueryConsumer(stop,server.GlobalQueryRequestChan)
 
 	httpServer := server.NewServer(ctx.String("address"), handler)
 	go func() {
@@ -118,7 +124,7 @@ func serverMain(ctx *cli.Context) {
 	if err != nil {
 		httpServer.Shutdown()
 	}
-	handleSignals()
+	handleSignals(stop)
 }
 
 // handle command args and do some checks.
@@ -169,6 +175,7 @@ func initStorage(ctx *cli.Context) error {
 		logger.Info("error %s", err)
 		return errors.New(err.Error())
 	}
+
 	return nil
 }
 
@@ -176,9 +183,12 @@ func configureServerHandler() (http.Handler, error) {
 	logger.Info("Start to configure server handlers...")
 	router := mux.NewRouter().SkipClean(true)
 
-	//Register upload api router
+	//Register sync upload api router
 	server.RegisterStorageServerRouter(router)
 	server.RegisterStorageServerRouterDownload(router)
+
+	//Register async upload api router.
+	server.RegisterStorageServerRouterAsync(router)
 
 	//Register status router
 	status.RegisteStatusRouter(router)
@@ -190,17 +200,20 @@ func configureServerHandler() (http.Handler, error) {
 
 }
 
-func handleSignals() {
+func handleSignals(stop chan<- interface{}) {
 	for {
 		select {
 		case signal := <-server.GlobalHTTPServerErrorCh:
 			switch signal {
+
 
 			}
 
 		case osSignal := <-server.GlobalOSSignalCh:
 
 			switch osSignal {
+			case os.Interrupt:
+				close(stop)
 
 			}
 		}

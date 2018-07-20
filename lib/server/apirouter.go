@@ -7,6 +7,7 @@ import (
 
 const (
 	APIPathPrefix = "/storage"
+	AsyncAPIPathPrefix = "/storage/async"
 )
 
 type storageServerHandler struct {
@@ -22,4 +23,11 @@ func RegisterStorageServerRouterDownload(router *mux.Router) {
 	storageAPI := storageServerHandler{}
 	apiRouter := router.PathPrefix(APIPathPrefix).Path("/download/{networkid:[0-9]+}/{filename}").Subrouter()
 	apiRouter.Methods(http.MethodGet).HandlerFunc(storageAPI.DownloadHandler)
+}
+
+
+func RegisterStorageServerRouterAsync(router *mux.Router){
+	storageAPI := storageServerHandler{}
+	apiRouter := router.PathPrefix(AsyncAPIPathPrefix).Path("/upload").Subrouter()
+	apiRouter.Methods(http.MethodPost).HandlerFunc(storageAPI.AsyncUploadHandlerStorage)
 }

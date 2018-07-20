@@ -20,6 +20,42 @@ type uploadResult struct {
 	DownloadLink string `json:"downloadLink"`
 }
 
+var operationProducer =func(op *Operation){
+	GlobalOperationChannel<-op
+
+}
+func (a storageServerHandler) AsyncUploadHandlerStorage(w http.ResponseWriter, r *http.Request){
+	//w.WriteHeader(http.StatusOK)
+	//fmt.Fprintf(w, "Upload Handler: %s\n", "hello")
+	vars := mux.Vars(r)
+	upload := vars["uploadfile"]
+	fmt.Println(upload)
+	r.Body = http.MaxBytesReader(w, r.Body, humanize.GByte*3)
+	r.ParseForm()
+	//r.ParseMultipartForm(64 << 1)
+	f, header, err := r.FormFile("uploadfile")
+	network := r.FormValue("network")
+	fmt.Println(vars)
+	if len(network) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	logger.Info("network %s", network)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+    op:=&Operation{
+    	File:f,
+    	FileHeader:header,
+    	Operation:"create",
+    	Network:network,
+	}
+	//put the operation into the operation channel
+    go operationProducer(op)
+    fmt.Fprintf(w,"please go to `http://localhost:9000/status/query` for your upload status")
+
+}
 func (a storageServerHandler) UploadHandlerStorage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	//w.WriteHeader(http.StatusOK)
@@ -48,7 +84,11 @@ func (a storageServerHandler) UploadHandlerStorage(w http.ResponseWriter, r *htt
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	io.Copy(f, file)
+	_, err=io.Copy(f, file)
+	if err!=nil{
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	//fmt.Fprintf(w, "formfile name: %s\n", handler.Header)
 
 	//TODO: implement upload and download URL in json format.
@@ -63,7 +103,6 @@ func (a storageServerHandler) UploadHandlerStorage(w http.ResponseWriter, r *htt
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 	}
-	fmt.Println("yes, hello")
 	fmt.Fprintf(w, "%s\n", b)
 
 }
@@ -89,8 +128,9 @@ func (a storageServerHandler) DownloadHandler(w http.ResponseWriter, r *http.Req
 		n, err = f.Read(buf)
 		writer.Write(buf[0:n])
 	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Download Handler: %s,%s,%s\n", "hello1", networkid, filename)
+
+	//w.WriteHeader(http.StatusOK)
+	//fmt.Fprintf(w, "Download Handler: %s,%s,%s\n", "hello1", networkid, filename)
 }
 
 // UploadHandler store the uploaded file current app `test` folder
