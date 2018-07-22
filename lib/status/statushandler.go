@@ -5,6 +5,7 @@ import (
 	"github.com/lzbj/FileServer/lib/server"
 	"github.com/gorilla/mux"
 	"fmt"
+	"encoding/json"
 )
 
 func (a storageStatusHander) StatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +24,13 @@ func (a storageStatusHander) StatusHandler(w http.ResponseWriter, r *http.Reques
 
 	select {
 	case result := <-server.GlobalOpeResChan:
-		fmt.Fprintf(w, "Upload Handler :%s \n", result)
+		s := fmt.Sprintf("%v", result)
+		fmt.Println(s)
+		b, err := json.Marshal(result)
+		if err != nil {
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+		}
+		fmt.Fprintf(w, "%s \n", b)
 	}
 }
 

@@ -59,7 +59,8 @@ type OperationResult struct {
 	Networkid   string
 	FileName    string
 	Result      string
-	ErrorDetail string
+	Downloadlink string
+	Detail string
 }
 
 type QueryRequest struct {
@@ -85,7 +86,7 @@ var AsyncOps = func(stop <-chan interface{}, oc chan *Operation, rc chan *Operat
 						Networkid:   op.Network,
 						FileName:    op.FileHeader.Filename,
 						Result:      "fail",
-						ErrorDetail: "create file failed",
+						Detail: "create file failed",
 					}
 					rc <- result
 				} else {
@@ -94,7 +95,8 @@ var AsyncOps = func(stop <-chan interface{}, oc chan *Operation, rc chan *Operat
 						Networkid:   op.Network,
 						FileName:    op.FileHeader.Filename,
 						Result:      "success",
-						ErrorDetail: "create file success",
+						Downloadlink: "http://"+GlobalPort+"/storage/download" + "/" + op.Network + "/" + op.FileHeader.Filename,
+						Detail: "create file success",
 					}
 					rc <- result
 				}
@@ -135,7 +137,7 @@ var QueryConsumer = func(stop <-chan interface{}, queryRequestChannel chan *Quer
 					Networkid:   "",
 					FileName:    "",
 					Result:      "fail",
-					ErrorDetail: "operation failed",
+					Detail: "operation failed",
 				}
 				GlobalOpeResChan <- errorResult
 			}
