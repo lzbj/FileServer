@@ -9,7 +9,6 @@ import (
 	"github.com/minio/minio/cmd/logger"
 	"io"
 	"net/http"
-	"os"
 )
 
 // UploadHandlerStorage store the file in the specified parameter network
@@ -53,7 +52,7 @@ func (a storageServerHandler) AsyncUploadHandlerStorage(w http.ResponseWriter, r
 	}
 	//put the operation into the operation channel
     go operationProducer(op)
-    fmt.Fprintf(w,"please go to `http://localhost:9000/status/query` for your upload status")
+    fmt.Fprintf(w,"%s","please go to http://"+GlobalPort+"/status/query"+ " for your upload status")
 
 }
 func (a storageServerHandler) UploadHandlerStorage(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +94,7 @@ func (a storageServerHandler) UploadHandlerStorage(w http.ResponseWriter, r *htt
 	//
 	result := uploadResult{
 		Result:       "ok",
-		DownloadLink: "http://127.0.0.1:9000/storage/download" + "/" + network + "/" + handler.Filename,
+		DownloadLink: "http://"+GlobalPort+"/storage/download" + "/" + network + "/" + handler.Filename,
 	}
 	s := fmt.Sprintf("%v", result)
 	fmt.Println(s)
@@ -133,39 +132,3 @@ func (a storageServerHandler) DownloadHandler(w http.ResponseWriter, r *http.Req
 	//fmt.Fprintf(w, "Download Handler: %s,%s,%s\n", "hello1", networkid, filename)
 }
 
-// UploadHandler store the uploaded file current app `test` folder
-func (a storageServerHandler) UploadHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Upload Handler: %s\n", "hello")
-	upload := vars["uploadfile"]
-	fmt.Println(upload)
-
-	http.MaxBytesReader(w, r.Body, humanize.GByte*3)
-	r.ParseForm()
-	file, handler, err := r.FormFile("uploadfile")
-	network := r.FormValue("network")
-	fmt.Println(vars)
-	if len(network) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-	}
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer file.Close()
-	f, err := os.OpenFile("./test/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer f.Close()
-	err = GlobalBackEndFSSys.CreateDir(context.Background(), network)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-	io.Copy(f, file)
-
-	fmt.Fprintf(w, "formfile name: %s\n", handler.Header)
-
-}
